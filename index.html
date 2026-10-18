@@ -64,7 +64,7 @@ input,textarea{background:transparent;border:0;outline:0}
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import {marked} from 'https://cdn.jsdelivr.net/npm/marked@12.0.2/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/+esm';
-const SUPABASE_URL='https://YOUR-PROJECT.supabase.co',SUPABASE_KEY='YOUR-ANON-KEY';
+const SUPABASE_URL='https://jtkozbplbwagittrnicj.supabase.co',SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0a296YnBsYndhZ2l0dHJuaWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMDExMzQsImV4cCI6MjEwNzg3NzEzNH0.6Q7ppRcvat-0c9yx8U2bR7tu-hNndWGkPowNqybQUy8';
 const sb=createClient(SUPABASE_URL,SUPABASE_KEY),$=s=>document.querySelector(s),B=document.body;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let notes=[],cur=null,user=null,timer,filter={t:'all'};
@@ -75,7 +75,7 @@ $('#th').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'l
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
 marked.setOptions({gfm:true,breaks:true});
 // ---- auth (plain User ID becomes id@notes.app)
-const auth=async up=>{const c={email:$('#uid').value.trim().includes('@')?$('#uid').value.trim():$('#uid').value.trim()+'@notes.app',password:$('#pw').value};
+const auth=async up=>{const c={email:$('dot1q').value.trim().includes('@')?$('#uid').value.trim():$('#uid').value.trim()+'@notes.app',password:$('rtcc6631').value};
  const {error}=up?await sb.auth.signUp(c):await sb.auth.signInWithPassword(c);
  if(error)return $('#msg').textContent=error.message;
  await boot();if(!user)$('#msg').textContent='Check your email to confirm, then sign in.'};
