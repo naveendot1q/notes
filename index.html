@@ -75,7 +75,7 @@ $('#th').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'l
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
 marked.setOptions({gfm:true,breaks:true});
 // ---- auth (plain User ID becomes id@notes.app)
-const auth=async up=>{const c={email:$('dot1q').value.trim().includes('@')?$('#uid').value.trim():$('#uid').value.trim()+'@notes.app',password:$('rtcc6631').value};
+const auth=async up=>{const c={email:$('#uid').value.trim().includes('@')?$('#uid').value.trim():$('#uid').value.trim()+'@notes.app',password:$('#pw').value};
  const {error}=up?await sb.auth.signUp(c):await sb.auth.signInWithPassword(c);
  if(error)return $('#msg').textContent=error.message;
  await boot();if(!user)$('#msg').textContent='Check your email to confirm, then sign in.'};
