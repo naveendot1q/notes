@@ -1,0 +1,146 @@
+<!doctype html><html lang="en" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Notes</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#1b1b1d">
+<link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap">
+<style>
+:root{--bg:#1b1b1d;--side:#232326;--pane:#202023;--card:#2a2a2e;--line:#36363b;--tx:#ececef;--mut:#9b9ba3;--ac:#00a82d;--am:#e5a93d;--sel:#2e2b25}
+[data-theme=light]{--bg:#fff;--side:#f5f5f7;--pane:#fafafb;--card:#f0f0f3;--line:#e4e4e8;--tx:#1d1d1f;--mut:#6e6e76;--am:#b7791f;--sel:#fdf3e0}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;padding:6px 10px;border-radius:8px}button:hover{background:var(--line)}
+input,textarea{background:transparent;border:0;outline:0}
+.hide{display:none!important}.mob{display:none}
+#auth{display:grid;place-items:center;height:100%}
+#auth form{width:min(340px,90vw);display:grid;gap:10px;background:var(--side);padding:24px;border-radius:12px;border:1px solid var(--line)}
+#auth input{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
+.pri{background:var(--ac)!important;color:#fff;font-weight:600;padding:10px 14px}
+#app{display:grid;grid-template-columns:230px 320px 1fr;grid-template-rows:100%;height:100%}
+#side{background:var(--side);padding:14px;overflow:auto;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+#side h4{margin:14px 8px 4px;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.nav{display:flex;justify-content:space-between;width:100%;text-align:left}.nav span{color:var(--mut)}.nav.on{background:var(--sel)}
+#list{background:var(--pane);border-right:1px solid var(--line);overflow:auto}
+#list header{display:flex;gap:6px;padding:12px;position:sticky;top:0;background:var(--pane)}
+#q{flex:1;background:var(--card);border-radius:10px;padding:8px 12px}
+.card{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.card.on{background:var(--sel);box-shadow:inset 3px 0 var(--am)}
+.card b{display:block}.card p{color:var(--mut);margin:2px 0;font-size:13px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card small{color:var(--mut)}.tag{display:inline-block;background:var(--line);border-radius:6px;padding:0 6px;margin-right:4px;font-size:12px}
+#ed{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+#bar{display:flex;gap:6px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#bar input{border-bottom:1px solid var(--line);width:140px;padding:4px}
+#title{font-size:26px;font-weight:700;padding:12px 20px 0;width:100%}
+#body{display:flex;flex:1;min-height:0}
+#txt{flex:1;resize:none;padding:14px 20px;font:14px/1.6 'JetBrains Mono',ui-monospace,monospace;min-width:0}
+#pv{flex:1;overflow:auto;padding:14px 20px;border-left:1px solid var(--line);min-width:0}
+.m-edit #pv{display:none}.m-pv #txt{display:none}.m-pv #pv{border:0}
+#pv img{max-width:100%;border-radius:8px}#pv a{color:var(--am)}
+#pv pre,#pv code{background:var(--card);border-radius:6px;padding:2px 5px;font-family:'JetBrains Mono',monospace}#pv pre{padding:10px;overflow:auto}
+#pv blockquote{border-left:3px solid var(--am);margin:0;padding-left:12px;color:var(--mut)}
+@media(max-width:800px){
+ #app{grid-template-columns:1fr}
+ #side{position:fixed;inset:0 25% 0 0;z-index:5;transform:translateX(-100%);transition:.2s}body.menu #side{transform:none}
+ #list,#ed{grid-area:1/1}body:not(.edit) #ed{display:none}body.edit #list{display:none}
+ .mob{display:inline-block}#pv{border:0}
+}
+</style></head><body>
+<div id="auth"><form id="af"><h2 style="margin:0">📝 Notes</h2>
+<input id="uid" placeholder="User ID or email" autocomplete="username" required>
+<input id="pw" type="password" placeholder="Password (min 6 chars)" autocomplete="current-password" minlength="6" required>
+<button class="pri">Sign in</button><button type="button" id="up">Create account</button><small id="msg"></small></form></div>
+<div id="app" class="hide">
+<aside id="side"><div id="me" style="padding:6px 8px;font-weight:600"></div>
+<button class="pri" id="new">＋ New note</button><div id="nav"></div><div style="flex:1"></div>
+<button class="nav" id="sync">⇄ Sync Obsidian folder</button><button class="nav" id="th">🌗 Dark / Light</button><button class="nav" id="out">Sign out</button></aside>
+<section id="list"><header><button class="mob" id="mn">☰</button><input id="q" placeholder="Search notes"></header><div id="cards"></div></section>
+<main id="ed"><div id="bar"><button class="mob" id="bk">←</button>
+<input id="nb" list="nbs" placeholder="Notebook"><datalist id="nbs"></datalist><input id="tg" placeholder="tags, comma, separated">
+<button id="pin" title="Pin">📌</button><button id="att" title="Attach PDF / image">📎</button><button id="mode" title="Edit / Split / Preview">👁</button><button id="del" title="Delete">🗑</button>
+<input type="file" id="fi" hidden multiple accept="application/pdf,image/*"></div>
+<input id="title" placeholder="Untitled">
+<div id="body"><textarea id="txt" placeholder="Write in Markdown… paste or drop images"></textarea><div id="pv"></div></div></main></div>
+<script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+import {marked} from 'https://cdn.jsdelivr.net/npm/marked@12.0.2/+esm';
+import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/+esm';
+const SUPABASE_URL='https://YOUR-PROJECT.supabase.co',SUPABASE_KEY='YOUR-ANON-KEY';
+const sb=createClient(SUPABASE_URL,SUPABASE_KEY),$=s=>document.querySelector(s),B=document.body;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let notes=[],cur=null,user=null,timer,filter={t:'all'};
+const modes=innerWidth>800?['split','edit','pv']:['edit','pv'];let mode=modes[0];
+const setTheme=t=>{document.documentElement.dataset.theme=t;localStorage.theme=t};
+setTheme(localStorage.theme||'dark');
+$('#th').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
+marked.setOptions({gfm:true,breaks:true});
+// ---- auth (plain User ID becomes id@notes.app)
+const auth=async up=>{const c={email:$('#uid').value.trim().includes('@')?$('#uid').value.trim():$('#uid').value.trim()+'@notes.app',password:$('#pw').value};
+ const {error}=up?await sb.auth.signUp(c):await sb.auth.signInWithPassword(c);
+ if(error)return $('#msg').textContent=error.message;
+ await boot();if(!user)$('#msg').textContent='Check your email to confirm, then sign in.'};
+$('#af').onsubmit=e=>{e.preventDefault();auth(false)};
+$('#up').onclick=()=>$('#af').reportValidity()&&auth(true);
+$('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
+async function boot(){const {data:{session}}=await sb.auth.getSession();if(!session)return;user=session.user;
+ $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#me').textContent='👤 '+user.email.replace('@notes.app','');
+ const {data}=await sb.from('notes').select('*').order('updated_at',{ascending:false});notes=data||[];
+ notes.length?openNote(notes[0].id):newNote();render()}
+// ---- list / sidebar
+const nbs=()=>[...new Set(notes.map(n=>n.notebook))].sort(),tgs=()=>[...new Set(notes.flatMap(n=>n.tags))].sort();
+function render(){const f=filter,q=$('#q').value.toLowerCase();
+ const btn=(t,v,label,c)=>`<button class="nav ${f.t===t&&f.v===v?'on':''}" data-t="${t}" data-v="${esc(v||'')}">${esc(label)} <span>${c}</span></button>`;
+ $('#nav').innerHTML=btn('all','','All notes',notes.length)+'<h4>Notebooks</h4>'+nbs().map(b=>btn('nb',b,b,notes.filter(n=>n.notebook===b).length)).join('')
+  +'<h4>Tags</h4>'+tgs().map(t=>btn('tag',t,'# '+t,notes.filter(n=>n.tags.includes(t)).length)).join('');
+ $('#nbs').innerHTML=nbs().map(b=>`<option value="${esc(b)}">`).join('');
+ const L=notes.filter(n=>(f.t==='all'||(f.t==='nb'?n.notebook===f.v:n.tags.includes(f.v)))&&(n.title+n.body).toLowerCase().includes(q))
+  .sort((a,b)=>(b.pinned-a.pinned)||(new Date(b.updated_at)-new Date(a.updated_at)));
+ $('#cards').innerHTML=L.map(n=>`<div class="card ${cur&&cur.id===n.id?'on':''}" data-id="${n.id}"><b>${n.pinned?'📌 ':''}${esc(n.title||'Untitled')}</b><p>${esc(n.body.replace(/[#*>`!\[\]()_-]/g,'').slice(0,160))}</p>${n.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<small>${new Date(n.updated_at).toLocaleDateString()}</small></div>`).join('')||'<p style="padding:14px;color:var(--mut)">No notes</p>'}
+$('#nav').onclick=e=>{const b=e.target.closest('[data-t]');if(b){filter={t:b.dataset.t,v:b.dataset.v};B.classList.remove('menu');render()}};
+$('#cards').onclick=e=>{const c=e.target.closest('.card');if(c)openNote(c.dataset.id,true)};
+$('#q').oninput=render;$('#mn').onclick=()=>B.classList.toggle('menu');$('#bk').onclick=()=>B.classList.remove('edit');
+// ---- editor
+const pv=()=>{$('#pv').innerHTML=DOMPurify.sanitize(marked.parse($('#txt').value||''))};
+$('#pv').onclick=e=>{const a=e.target.closest('a');if(a){e.preventDefault();window.open(a.href,'_blank')}};
+function openNote(id,show){cur=notes.find(n=>n.id===id);if(!cur)return;
+ $('#title').value=cur.title;$('#txt').value=cur.body;$('#nb').value=cur.notebook;$('#tg').value=cur.tags.join(', ');
+ pv();if(show)B.classList.add('edit');render()}
+function changed(){if(!cur)return;
+ Object.assign(cur,{title:$('#title').value,body:$('#txt').value,notebook:$('#nb').value.trim()||'My Notebook',
+  tags:$('#tg').value.split(',').map(t=>t.trim()).filter(Boolean),updated_at:new Date().toISOString()});
+ pv();render();clearTimeout(timer);timer=setTimeout(()=>sb.from('notes').upsert(cur),700)}
+['#title','#txt','#nb','#tg'].forEach(s=>$(s).oninput=changed);
+async function newNote(){const {data,error}=await sb.from('notes').insert({notebook:filter.t==='nb'?filter.v:'My Notebook',tags:filter.t==='tag'?[filter.v]:[]}).select().single();
+ if(error)return alert(error.message);notes.unshift(data);openNote(data.id,true);$('#title').focus()}
+$('#new').onclick=newNote;
+$('#pin').onclick=()=>{if(cur){cur.pinned=!cur.pinned;changed()}};
+$('#del').onclick=async()=>{if(!cur||!confirm('Delete this note?'))return;await sb.from('notes').delete().eq('id',cur.id);
+ notes=notes.filter(n=>n!==cur);cur=null;B.classList.remove('edit');notes.length?openNote(notes[0].id):newNote();render()};
+$('#body').className='m-'+mode;
+$('#mode').onclick=()=>{mode=modes[(modes.indexOf(mode)+1)%modes.length];$('#body').className='m-'+mode};
+// ---- images & PDFs -> Supabase Storage, inserted as Markdown
+async function upload(file){const ext=(file.name&&file.name.includes('.')?file.name.split('.').pop():file.type.split('/')[1]||'png').toLowerCase();
+ const p=`${user.id}/${crypto.randomUUID()}.${ext}`,{error}=await sb.storage.from('files').upload(p,file,{contentType:file.type});
+ if(error)return alert(error.message);
+ const url=sb.storage.from('files').getPublicUrl(p).data.publicUrl,t=$('#txt');
+ t.setRangeText(`\n${file.type.startsWith('image/')?`![](${url})`:`[📄 ${file.name}](${url})`}\n`,t.selectionStart,t.selectionEnd,'end');changed()}
+$('#txt').onpaste=e=>{const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();upload(f)}};
+$('#txt').ondrop=e=>{if(e.dataTransfer.files.length){e.preventDefault();[...e.dataTransfer.files].forEach(upload)}};
+$('#att').onclick=()=>$('#fi').click();$('#fi').onchange=e=>{[...e.target.files].forEach(upload);e.target.value=''};
+// ---- two-way sync with a folder of .md files (Obsidian vault via Google Drive for desktop)
+$('#sync').onclick=async()=>{
+ if(!window.showDirectoryPicker)return alert('Folder sync needs desktop Chrome/Edge. Install Google Drive for desktop so your Obsidian vault folder exists on disk.');
+ let dir;try{dir=await showDirectoryPicker({mode:'readwrite'})}catch{return}
+ const files={};for await(const [name,h] of dir.entries())if(h.kind==='file'&&name.endsWith('.md'))files[name]={h,f:await h.getFile()};
+ let pulled=0,pushed=0;
+ for(const n of notes){
+  const name=(n.title||'Untitled').replace(/[\\/:*?"<>|]/g,'-')+'.md',x=files[name];delete files[name];
+  if(x&&x.f.lastModified>+new Date(n.updated_at)){
+   const t=await x.f.text();if(t!==n.body){n.body=t;n.updated_at=new Date().toISOString();await sb.from('notes').upsert(n);pulled++}
+  }else if(!x||(await x.f.text())!==n.body){
+   const h=x?x.h:await dir.getFileHandle(name,{create:true}),w=await h.createWritable();await w.write(n.body);await w.close();pushed++}}
+ for(const [name,{f}] of Object.entries(files)){
+  const {data}=await sb.from('notes').insert({title:name.slice(0,-3),body:await f.text()}).select().single();if(data){notes.push(data);pulled++}}
+ render();if(cur)openNote(cur.id);alert(`Synced: ${pushed} written to folder, ${pulled} pulled in`)};
+boot();
+</script></body></html>
