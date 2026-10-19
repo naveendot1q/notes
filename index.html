@@ -4,8 +4,8 @@
 <link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap">
 <style>
-:root{--bg:#1b1b1d;--side:#232326;--pane:#202023;--card:#2a2a2e;--line:#36363b;--tx:#ececef;--mut:#9b9ba3;--ac:#00a82d;--am:#e5a93d;--sel:#2e2b25}
-[data-theme=light]{--bg:#fff;--side:#f5f5f7;--pane:#fafafb;--card:#f0f0f3;--line:#e4e4e8;--tx:#1d1d1f;--mut:#6e6e76;--am:#b7791f;--sel:#fdf3e0}
+:root{--bg:#1b1b1d;--side:#232326;--pane:#202023;--card:#2a2a2e;--line:#36363b;--tx:#ececef;--mut:#9b9ba3;--ac:#00a82d;--am:#e5a93d;--sel:#2e2b25;--tb:#5a5a64}
+[data-theme=light]{--bg:#fff;--side:#f5f5f7;--pane:#fafafb;--card:#f0f0f3;--line:#e4e4e8;--tx:#1d1d1f;--mut:#6e6e76;--am:#b7791f;--sel:#fdf3e0;--tb:#bfbfc9}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,sans-serif}
 button,input,textarea{font:inherit;color:inherit}
@@ -16,7 +16,7 @@ input,textarea{background:transparent;border:0;outline:0}
 #auth form{width:min(340px,90vw);display:grid;gap:10px;background:var(--side);padding:24px;border-radius:12px;border:1px solid var(--line)}
 #auth input{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
 .pri{background:var(--ac)!important;color:#fff;font-weight:600;padding:10px 14px}
-#app{display:grid;grid-template-columns:230px 320px 1fr;grid-template-rows:100%;height:100%}
+#app{display:grid;grid-template-columns:var(--sw,230px) 5px var(--lw,320px) 5px 1fr;grid-template-rows:100%;height:100%}
 #side{background:var(--side);padding:14px;overflow:auto;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
 #side h4{margin:14px 8px 4px;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .nav{display:flex;justify-content:space-between;width:100%;text-align:left}.nav span{color:var(--mut)}.nav.on{background:var(--sel)}
@@ -42,8 +42,18 @@ input,textarea{background:transparent;border:0;outline:0}
  #app{grid-template-columns:1fr}
  #side{position:fixed;inset:0 25% 0 0;z-index:5;transform:translateX(-100%);transition:.2s}body.menu #side{transform:none}
  #list,#ed{grid-area:1/1}body:not(.edit) #ed{display:none}body.edit #list{display:none}
- .mob{display:inline-block}#pv{border:0}
+ .mob{display:inline-block}.dsk,.rz{display:none}#pv{border:0}
 }
+.rz{cursor:col-resize;touch-action:none}.rz:hover,.rz:active{background:var(--am);opacity:.5}
+#side,#list{min-width:0}.hs #side,.hl #list{padding:0;border:0;overflow:hidden;visibility:hidden}
+.nav i{display:inline-block;width:14px;font-style:normal;color:var(--mut)}.nav .nm{color:var(--tx);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tw{overflow-x:auto;margin:12px 0}#pv table{border-collapse:collapse;min-width:100%}
+#pv th,#pv td{border:1px solid var(--tb);padding:8px 12px;vertical-align:top;text-align:left}
+#pv th{background:var(--card);font-weight:600}#pv tbody tr:nth-child(even){background:rgba(127,127,127,.07)}
+.zen #side,.zen #list,.zen .rz{display:none}.zen #app{grid-template-columns:1fr}
+.zen #bar{position:fixed;top:6px;right:10px;border:0;padding:0;opacity:.3;z-index:6;background:none}.zen #bar:hover{opacity:1}.zen #bar>:not(.zk){display:none}
+.zen #title,.zen #body{width:100%;max-width:900px;margin-inline:auto}
+#st{margin-left:auto;font-size:12px;color:var(--mut);white-space:nowrap;padding:0 6px}
 </style><script src="https://accounts.google.com/gsi/client" async defer></script></head><body>
 <div id="auth"><form id="af"><h2 style="margin:0">📝 Notes</h2>
 <input id="uid" placeholder="User ID or email" autocomplete="username" required>
@@ -52,12 +62,12 @@ input,textarea{background:transparent;border:0;outline:0}
 <div id="app" class="hide">
 <aside id="side"><div id="me" style="padding:6px 8px;font-weight:600"></div>
 <button class="pri" id="new">＋ New note</button><div id="nav"></div><div style="flex:1"></div>
-<button class="nav" id="sync">⇄ Sync Google Drive</button><button class="nav" id="fold">📁 Drive folder…</button><button class="nav" id="th">🌗 Dark / Light</button><button class="nav" id="out">Sign out</button></aside>
-<section id="list"><header><button class="mob" id="mn">☰</button><input id="q" placeholder="Search notes"></header><div id="cards"></div></section>
-<main id="ed"><div id="bar"><button class="mob" id="bk">←</button>
-<input id="nb" list="nbs" placeholder="Notebook"><datalist id="nbs"></datalist><input id="tg" placeholder="tags, comma, separated">
-<button id="pin" title="Pin">📌</button><button id="att" title="Attach PDF / image">📎</button><button id="mode" title="Edit / Split / Preview">👁</button><button id="del" title="Delete">🗑</button>
-<input type="file" id="fi" hidden multiple accept="application/pdf,image/*"></div>
+<button class="nav" id="sync">⇄ Sync Google Drive</button><button class="nav" id="fold">📁 Drive folder…</button><button class="nav" id="th">🌗 Dark / Light</button><button class="nav" id="out">Sign out</button></aside><div class="rz" data-k="sw"></div>
+<section id="list"><header><button class="mob" id="mn">☰</button><input id="q" placeholder="Search notes"></header><div id="cards"></div></section><div class="rz" data-k="lw"></div>
+<main id="ed"><div id="bar"><button class="mob" id="bk">←</button><button class="dsk" id="tS" title="Toggle sidebar">◧</button><button class="dsk" id="tL" title="Toggle notes list">▤</button>
+<input id="nb" list="nbs" placeholder="Folder path"><datalist id="nbs"></datalist><input id="tg" placeholder="tags, comma, separated">
+<button id="pin" title="Pin">📌</button><button id="att" title="Attach PDF / image">📎</button><button id="mode" class="zk" title="Edit / Split / Preview">👁</button><button id="zen" class="zk" title="Focus mode (Alt+Z)">⛶</button><button id="del" title="Delete">🗑</button>
+<input type="file" id="fi" hidden multiple accept="application/pdf,image/*"><span id="st" class="zk"></span></div>
 <input id="title" placeholder="Untitled">
 <div id="body"><textarea id="txt" placeholder="Write in Markdown… paste or drop images"></textarea><div id="pv"></div></div></main></div>
 <script type="module">
@@ -68,6 +78,7 @@ const SUPABASE_URL='https://jtkozbplbwagittrnicj.supabase.co',SUPABASE_KEY='eyJh
 const sb=createClient(SUPABASE_URL,SUPABASE_KEY),$=s=>document.querySelector(s),B=document.body;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let notes=[],cur=null,user=null,timer,filter={t:'all'};
+const ROOT='My Notebook',dirOf=n=>n.notebook===ROOT?'':n.notebook,par=p=>p.includes('/')?p.slice(0,p.lastIndexOf('/')):'',ex=new Set(JSON.parse(localStorage.ex||'[]'));
 const modes=innerWidth>800?['split','edit','pv']:['edit','pv'];let mode=modes[0];
 const setTheme=t=>{document.documentElement.dataset.theme=t;localStorage.theme=t};
 setTheme(localStorage.theme||'dark');
@@ -84,40 +95,65 @@ $('#up').onclick=()=>$('#af').reportValidity()&&auth(true);
 $('#out').onclick=async()=>{await sb.auth.signOut();location.reload()};
 async function boot(){const {data:{session}}=await sb.auth.getSession();if(!session)return;user=session.user;
  $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#me').textContent='👤 '+user.email.replace('@notes.app','');
- const {data}=await sb.from('notes').select('*').order('updated_at',{ascending:false});notes=data||[];
+ const {data,error}=await sb.from('notes').select('*').order('updated_at',{ascending:false});if(error)return alert('Could not load notes: '+error.message);notes=data||[];restoreDrafts();
  notes.length?openNote(notes[0].id):newNote();render()}
-// ---- list / sidebar
-const nbs=()=>[...new Set(notes.map(n=>n.notebook))].sort(),tgs=()=>[...new Set(notes.flatMap(n=>n.tags))].sort();
-function render(){const f=filter,q=$('#q').value.toLowerCase();
- const btn=(t,v,label,c)=>`<button class="nav ${f.t===t&&f.v===v?'on':''}" data-t="${t}" data-v="${esc(v||'')}">${esc(label)} <span>${c}</span></button>`;
- $('#nav').innerHTML=btn('all','','All notes',notes.length)+'<h4>Notebooks</h4>'+nbs().map(b=>btn('nb',b,b,notes.filter(n=>n.notebook===b).length)).join('')
+// ---- list / sidebar: notebooks are a folder tree (path "a/b" = Drive folder a/b)
+const inDir=(n,p)=>p===ROOT?n.notebook===ROOT:(n.notebook===p||n.notebook.startsWith(p+'/'));
+const paths=()=>{const s=new Set();notes.forEach(n=>{let p='';for(const x of dirOf(n).split('/').filter(Boolean)){p=p?p+'/'+x:x;s.add(p)}});return [...s].sort((a,b)=>a.localeCompare(b))};
+const nbs=()=>[ROOT,...paths()],tgs=()=>[...new Set(notes.flatMap(n=>n.tags))].sort();
+function render(){const f=filter,q=$('#q').value.toLowerCase(),P=paths();
+ const btn=(t,v,label,c,d=0,car='')=>`<button class="nav ${f.t===t&&(f.v||'')===(v||'')?'on':''}" style="padding-left:${10+d*14}px" data-t="${t}" data-v="${esc(v||'')}"><span class="nm">${car}${esc(label)}</span><span>${c}</span></button>`;
+ const branch=(pre,d)=>P.filter(p=>par(p)===pre).map(p=>{const k=P.some(x=>par(x)===p),o=ex.has(p);
+  return btn('nb',p,'📁 '+p.split('/').pop(),notes.filter(n=>inDir(n,p)).length,d,k?`<i data-x="${esc(p)}">${o?'▾':'▸'}</i>`:'<i></i>')+(o?branch(p,d+1):'')}).join('');
+ $('#nav').innerHTML=btn('all','','All notes',notes.length)+'<h4>Notebooks</h4>'+btn('nb',ROOT,'📓 '+ROOT,notes.filter(n=>n.notebook===ROOT).length)+branch('',0)
   +'<h4>Tags</h4>'+tgs().map(t=>btn('tag',t,'# '+t,notes.filter(n=>n.tags.includes(t)).length)).join('');
  $('#nbs').innerHTML=nbs().map(b=>`<option value="${esc(b)}">`).join('');
- const L=notes.filter(n=>(f.t==='all'||(f.t==='nb'?n.notebook===f.v:n.tags.includes(f.v)))&&(n.title+n.body).toLowerCase().includes(q))
+ const L=notes.filter(n=>(f.t==='all'||(f.t==='nb'?inDir(n,f.v):n.tags.includes(f.v)))&&(n.title+n.body).toLowerCase().includes(q))
   .sort((a,b)=>(b.pinned-a.pinned)||(new Date(b.updated_at)-new Date(a.updated_at)));
- $('#cards').innerHTML=L.map(n=>`<div class="card ${cur&&cur.id===n.id?'on':''}" data-id="${n.id}"><b>${n.pinned?'📌 ':''}${esc(n.title||'Untitled')}</b><p>${esc(n.body.replace(/[#*>`!\[\]()_-]/g,'').slice(0,160))}</p>${n.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<small>${new Date(n.updated_at).toLocaleDateString()}</small></div>`).join('')||'<p style="padding:14px;color:var(--mut)">No notes</p>'}
-$('#nav').onclick=e=>{const b=e.target.closest('[data-t]');if(b){filter={t:b.dataset.t,v:b.dataset.v};B.classList.remove('menu');render()}};
+ $('#cards').innerHTML=L.map(n=>`<div class="card ${cur&&cur.id===n.id?'on':''}" data-id="${n.id}"><b>${n.pinned?'📌 ':''}${esc(n.title||'Untitled')}</b><p>${esc(n.body.replace(/[#*>`!\[\]()_|-]/g,'').slice(0,160))}</p>${n.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<small>${n.notebook===ROOT?'':'📁 '+esc(n.notebook)+' · '}${new Date(n.updated_at).toLocaleDateString()}</small></div>`).join('')||'<p style="padding:14px;color:var(--mut)">No notes</p>'}
+$('#nav').onclick=e=>{const x=e.target.closest('[data-x]');
+ if(x){const p=x.dataset.x;ex.has(p)?ex.delete(p):ex.add(p);localStorage.ex=JSON.stringify([...ex]);return render()}
+ const b=e.target.closest('[data-t]');if(b){filter={t:b.dataset.t,v:b.dataset.v};B.classList.remove('menu');render()}};
 $('#cards').onclick=e=>{const c=e.target.closest('.card');if(c)openNote(c.dataset.id,true)};
 $('#q').oninput=render;$('#mn').onclick=()=>B.classList.toggle('menu');$('#bk').onclick=()=>B.classList.remove('edit');
 // ---- editor
-const pv=()=>{$('#pv').innerHTML=DOMPurify.sanitize(marked.parse($('#txt').value||''))};
+const pv=()=>{$('#pv').innerHTML=DOMPurify.sanitize(marked.parse($('#txt').value||'')).replace(/<table/g,'<div class="tw"><table').replace(/<\/table>/g,'</table></div>')};
 $('#pv').onclick=e=>{const a=e.target.closest('a');if(a){e.preventDefault();window.open(a.href,'_blank')}};
 function openNote(id,show){cur=notes.find(n=>n.id===id);if(!cur)return;
  $('#title').value=cur.title;$('#txt').value=cur.body;$('#nb').value=cur.notebook;$('#tg').value=cur.tags.join(', ');
  pv();if(show)B.classList.add('edit');render()}
 function changed(){if(!cur)return;
- Object.assign(cur,{title:$('#title').value,body:$('#txt').value,notebook:$('#nb').value.trim()||'My Notebook',
+ Object.assign(cur,{title:$('#title').value,body:$('#txt').value,notebook:$('#nb').value.trim().replace(/^\/+|\/+$/g,'')||ROOT,
   tags:$('#tg').value.split(',').map(t=>t.trim()).filter(Boolean),updated_at:new Date().toISOString()});
- pv();render();clearTimeout(timer);timer=setTimeout(()=>sb.from('notes').upsert(cur),700)}
+ clearTimeout(rT);rT=setTimeout(()=>{pv();render()},250);queueSave(cur)}
 ['#title','#txt','#nb','#tg'].forEach(s=>$(s).oninput=changed);
 async function newNote(){const {data,error}=await sb.from('notes').insert({notebook:filter.t==='nb'?filter.v:'My Notebook',tags:filter.t==='tag'?[filter.v]:[]}).select().single();
  if(error)return alert(error.message);notes.unshift(data);openNote(data.id,true);$('#title').focus()}
 $('#new').onclick=newNote;
 $('#pin').onclick=()=>{if(cur){cur.pinned=!cur.pinned;changed()}};
-$('#del').onclick=async()=>{if(!cur||!confirm('Delete this note?'))return;await sb.from('notes').delete().eq('id',cur.id);
+$('#del').onclick=async()=>{if(!cur||!confirm('Delete this note?'))return;dirty.delete(cur.id);localStorage.removeItem('d:'+cur.id);await sb.from('notes').delete().eq('id',cur.id);
  notes=notes.filter(n=>n!==cur);cur=null;B.classList.remove('edit');notes.length?openNote(notes[0].id):newNote();render()};
 $('#body').className='m-'+mode;
 $('#mode').onclick=()=>{mode=modes[(modes.indexOf(mode)+1)%modes.length];$('#body').className='m-'+mode};
+// ---- autosave: local draft on every keystroke, server save ~0.35s after a pause (max 3s while typing), retry, flush on exit
+let rT,maxT=0,saving=false,retry=0,hAt=0;const dirty=new Map(),setSt=(t,c)=>{$('#st').textContent=t;$('#st').style.color=c||''};
+function queueSave(n){dirty.set(n.id,n);try{localStorage['d:'+n.id]=JSON.stringify(n)}catch{}
+ setSt('Saving…');clearTimeout(timer);timer=setTimeout(flush,350);if(!maxT)maxT=setTimeout(flush,3000)}
+async function flush(){clearTimeout(maxT);maxT=0;if(saving||!dirty.size)return;saving=true;
+ const batch=[...dirty.values()];dirty.clear();let bad=null;
+ for(const n of batch){const {error}=await sb.from('notes').upsert({...n});
+  if(error){bad=error;dirty.set(n.id,n)}else if(!dirty.has(n.id))localStorage.removeItem('d:'+n.id)}
+ saving=false;
+ if(bad){retry++;setSt('⚠ Not saved: '+bad.message+' (retrying)','#e5534b');setTimeout(flush,Math.min(30000,2000*retry))}
+ else{retry=0;dirty.size?flush():setSt('Saved ✓')}}
+function restoreDrafts(){for(const n of notes){const d=localStorage['d:'+n.id];if(!d)continue;
+ try{const x=JSON.parse(d);if(tm(x.updated_at)>tm(n.updated_at)){Object.assign(n,x);queueSave(n)}else localStorage.removeItem('d:'+n.id)}catch{}}}
+document.addEventListener('visibilitychange',async()=>{if(document.hidden){hAt=Date.now();return flush()}
+ if(!user||dirty.size||saving||Date.now()-hAt<20000)return;
+ const {data}=await sb.from('notes').select('*').order('updated_at',{ascending:false});
+ if(!data||dirty.size||saving)return;
+ const id=cur&&cur.id;notes=data;const k=notes.find(n=>n.id===id)||notes[0];k?openNote(k.id):render()});
+addEventListener('beforeunload',e=>{if(dirty.size||saving){e.preventDefault();e.returnValue=''}});
 // ---- images & PDFs -> Supabase Storage, inserted as Markdown
 async function upload(file){const ext=(file.name&&file.name.includes('.')?file.name.split('.').pop():file.type.split('/')[1]||'png').toLowerCase();
  const p=`${user.id}/${crypto.randomUUID()}.${ext}`,{error}=await sb.storage.from('files').upload(p,file,{contentType:file.type});
@@ -135,33 +171,68 @@ const gAuth=()=>new Promise((ok,no)=>{if(gTok&&Date.now()<gExp)return ok(gTok);
 const gf=async(u,o={})=>{const r=await fetch(u,{...o,headers:{...o.headers,Authorization:'Bearer '+await gAuth()}});
  if(!r.ok)throw Error('Drive '+r.status+': '+(await r.text()).slice(0,150));return r};
 const media=async id=>(await gf(`${GAPI}drive/v3/files/${id}?alt=media`)).text();
-async function put(n,folder){const b='b'+Math.random().toString(36).slice(2),name=(n.title||'Untitled').replace(/[\\/:*?"<>|]/g,'-')+'.md';
- const r=await gf(`${GAPI}upload/drive/v3/files${n.drive_id?'/'+n.drive_id:''}?uploadType=multipart&fields=id,modifiedTime`,
-  {method:n.drive_id?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+b},
-   body:`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(n.drive_id?{name}:{name,parents:[folder]})}\r\n--${b}\r\nContent-Type: text/markdown; charset=UTF-8\r\n\r\n${n.body}\r\n--${b}--`});
- const f=await r.json();n.drive_id=f.id;n.updated_at=n.drive_mtime=f.modifiedTime}
+let idByPath={};
+async function ensureDir(path,root){let pid=root,acc='';
+ for(const x of path.split('/').filter(Boolean)){acc=acc?acc+'/'+x:x;
+  if(!idByPath[acc]){const r=await gf(`${GAPI}drive/v3/files?fields=id`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:x,mimeType:'application/vnd.google-apps.folder',parents:[pid]})});idByPath[acc]=(await r.json()).id}
+  pid=idByPath[acc]}
+ return pid}
+async function put(n,root,f){const b='b'+Math.random().toString(36).slice(2),name=(n.title||'Untitled').replace(/[\\/:*?"<>|]/g,'-')+'.md',dest=await ensureDir(dirOf(n),root);
+ let q='uploadType=multipart&fields=id,modifiedTime';
+ if(f&&f.parents&&!f.parents.includes(dest))q+=`&addParents=${dest}&removeParents=${f.parents[0]}`;
+ const r=await gf(`${GAPI}upload/drive/v3/files${f?'/'+f.id:''}?${q}`,{method:f?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+b},
+  body:`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(f?{name}:{name,parents:[dest]})}\r\n--${b}\r\nContent-Type: text/markdown; charset=UTF-8\r\n\r\n${n.body}\r\n--${b}--`});
+ const j=await r.json();n.drive_id=j.id;n.updated_at=n.drive_mtime=j.modifiedTime}
+async function walk(root){const files=[];idByPath={};let lvl=[[root,'']];
+ while(lvl.length){const next=[];
+  await Promise.all(lvl.map(async([id,path])=>{let pt='';
+   do{const j=await(await gf(`${GAPI}drive/v3/files?pageSize=1000&fields=nextPageToken,files(id,name,mimeType,modifiedTime,parents)&q=${encodeURIComponent(`'${id}' in parents and trashed=false`)}${pt?'&pageToken='+encodeURIComponent(pt):''}`)).json();
+    for(const f of j.files){
+     if(f.mimeType==='application/vnd.google-apps.folder'){if(!f.name.startsWith('.')){const p=path?path+'/'+f.name:f.name;idByPath[p]=f.id;next.push([f.id,p])}}
+     else if(f.name.endsWith('.md'))files.push({...f,dir:path})}
+    pt=j.nextPageToken}while(pt)}));
+  lvl=next}
+ return files}
 const pickFolder=async()=>{const v=prompt('Paste your Google Drive vault folder link (or its ID):',user.user_metadata.folder||'');if(!v)return;
  const folder=(v.match(/folders\/([\w-]+)/)||[,v.trim()])[1],{data,error}=await sb.auth.updateUser({data:{folder}});
  if(error)throw error;user=data.user;return folder};
 $('#fold').onclick=()=>pickFolder().catch(e=>alert(e.message));
 $('#sync').onclick=async()=>{const btn=$('#sync'),label=btn.textContent;
  try{await gAuth();btn.textContent='⇄ Syncing…';
-  const folder=user.user_metadata.folder||await pickFolder();if(!folder)return;
-  const files=[];let pt='';
-  do{const j=await(await gf(`${GAPI}drive/v3/files?pageSize=1000&fields=nextPageToken,files(id,name,modifiedTime)&q=${encodeURIComponent(`'${folder}' in parents and trashed=false`)}${pt?'&pageToken='+encodeURIComponent(pt):''}`)).json();
-   files.push(...j.files.filter(f=>f.name.endsWith('.md')));pt=j.nextPageToken}while(pt);
-  const byId=Object.fromEntries(files.map(f=>[f.id,f])),linked=new Set();let up=0,down=0;
+  const root=user.user_metadata.folder||await pickFolder();if(!root)return;
+  const files=await walk(root),byId=Object.fromEntries(files.map(f=>[f.id,f])),linked=new Set();let up=0,down=0;
   for(const n of notes){const f=byId[n.drive_id];if(f)linked.add(f.id);
    const noteNew=!f||!n.drive_mtime||tm(n.updated_at)>tm(n.drive_mtime),fileNew=f&&tm(f.modifiedTime)!==tm(n.drive_mtime);
    if(fileNew&&(!noteNew||tm(f.modifiedTime)>=tm(n.updated_at))){
-    n.body=await media(f.id);n.title=f.name.slice(0,-3);n.updated_at=n.drive_mtime=f.modifiedTime;down++}
-   else if(noteNew){if(!f)n.drive_id=null;await put(n,folder);up++}
+    const remote=await media(f.id);
+    if(noteNew&&remote!==n.body){const {data:c}=await sb.from('notes').insert({title:n.title+' (conflict copy)',body:n.body,notebook:n.notebook}).select().single();if(c)notes.push(c)}
+    n.body=remote;n.title=f.name.slice(0,-3);n.notebook=f.dir||ROOT;n.updated_at=n.drive_mtime=f.modifiedTime;down++}
+   else if(noteNew){if(!f)n.drive_id=null;await put(n,root,f);up++}
+   else if(f.dir!==dirOf(n)){n.notebook=f.dir||ROOT;down++}
    else continue;
    await sb.from('notes').upsert(n)}
   await Promise.all(files.filter(f=>!linked.has(f.id)).map(async f=>{
-   const {data}=await sb.from('notes').insert({title:f.name.slice(0,-3),body:await media(f.id),drive_id:f.id,drive_mtime:f.modifiedTime,updated_at:f.modifiedTime}).select().single();
+   const {data}=await sb.from('notes').insert({title:f.name.slice(0,-3),body:await media(f.id),notebook:f.dir||ROOT,drive_id:f.id,drive_mtime:f.modifiedTime,updated_at:f.modifiedTime}).select().single();
    if(data){notes.push(data);down++}}));
   render();if(cur)openNote(cur.id);alert(`Drive synced: ${up} uploaded, ${down} downloaded`)
  }catch(e){alert(e.message||e)}finally{btn.textContent=label}};
+// ---- layout: resizable / collapsible panes, focus (zen) mode
+let lay=JSON.parse(localStorage.lay||'{"sw":230,"lw":320}');
+const applyLay=()=>{const st=$('#app').style;st.setProperty('--sw',(lay.hs?0:lay.sw)+'px');st.setProperty('--lw',(lay.hl?0:lay.lw)+'px');
+ B.classList.toggle('hs',!!lay.hs);B.classList.toggle('hl',!!lay.hl);localStorage.lay=JSON.stringify(lay)};
+$('#tS').onclick=()=>{lay.hs=!lay.hs;applyLay()};$('#tL').onclick=()=>{lay.hl=!lay.hl;applyLay()};
+document.querySelectorAll('.rz').forEach(h=>h.onpointerdown=e=>{e.preventDefault();h.setPointerCapture(e.pointerId);
+ const k=h.dataset.k,x0=e.clientX,w0=lay[k];
+ h.onpointermove=m=>{lay[k]=Math.max(160,Math.min(600,w0+m.clientX-x0));lay[k==='sw'?'hs':'hl']=0;applyLay()};
+ h.onpointerup=()=>{h.onpointermove=h.onpointerup=null}});
+applyLay();
+const zen=on=>{B.classList.toggle('zen',on);
+ if(on){if(mode==='split'){mode='edit';$('#body').className='m-edit'}document.documentElement.requestFullscreen?.().catch(()=>{});$('#txt').focus()}
+ else if(document.fullscreenElement)document.exitFullscreen()};
+$('#zen').onclick=()=>zen(!B.classList.contains('zen'));
+document.onfullscreenchange=()=>{if(!document.fullscreenElement)B.classList.remove('zen')};
+document.onkeydown=e=>{if(e.key==='Escape'&&B.classList.contains('zen'))zen(false);
+ if(e.altKey&&e.code==='KeyZ'){e.preventDefault();$('#zen').click()}
+ if(e.ctrlKey&&e.code==='Backslash'){e.preventDefault();$('#tS').click()}};
 boot();
 </script></body></html>
