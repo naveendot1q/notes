@@ -16,11 +16,11 @@ Already ran an older `schema.sql`? Run once: `alter table notes add column if no
 3. **Credentials → Create credentials → OAuth client ID → Web application**. Add your Vercel URL (and `http://localhost:3000` for local tests) under *Authorized JavaScript origins*. Paste the Client ID into `GOOGLE_CLIENT_ID` in `index.html`.
 4. In the app tap **📁 Drive folder…** and paste the link to your Obsidian vault folder (saved to your account, so the phone picks it up too). Then tap **⇄ Sync Google Drive**. Google shows an "unverified app" warning the first time: Advanced → Continue.
 
-Sync walks the whole folder tree. Each Drive folder is a Notebook (path like `CCNA_Study_Guide/images`), each `.md` file is a note, the newest edit wins, and new files become notes. Changing a note's **Folder path** moves its file in Drive. Folders starting with `.` (`.obsidian`, `.trash`) are skipped. Deleting a file in Drive does not delete the note (the next sync uploads it again). Images referenced by relative path inside your vault are not displayed yet. Tags stay in the app only.
+Sync walks the whole folder tree. Each Drive folder is a Notebook (path like `CCNA_Study_Guide/images`), each `.md` file is a note, the newest edit wins, and new files become notes. Changing a note's **Folder path** moves its file in Drive. Folders starting with `.` (`.obsidian`, `.trash`) are skipped. Deleting a file in Drive does not delete the note (the next sync uploads it again). Tags stay in the app only.
 
 ## Notes
-- Pasted or dropped images and attached PDFs go to the Supabase `files` bucket and are linked by URL in the Markdown.
-- Bucket URLs are public but unguessable. Make the bucket private if you need stricter privacy (the links would then need signed URLs).
+- Pasted, dropped or attached images and PDFs are uploaded to your Drive vault, into the folder named by `ATTACH` in `index.html` (default `ZUsed in Above Files`). Pasted images get Obsidian-style names like `{GUID}.png` and are referenced as `![[{GUID}.png]]`.
+- Embeds like `![[name.png]]`, `![[name.png|300]]` and relative `![](images/a.png)` are looked up in the vault and cached on the device. After a sign-in (the Sync button, or tap an image placeholder) they load; later they open instantly. `![[file.pdf]]` shows a link that opens the PDF inline.
 
 ## Layout and focus mode
 Drag the thin divider between panes to resize. The ◧ and ▤ buttons hide the sidebar and notes list. ⛶ (or Alt+Z) is focus mode: only the editor, full screen, Esc to leave. Ctrl+\ toggles the sidebar.

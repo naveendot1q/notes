@@ -56,6 +56,8 @@ input,textarea{background:transparent;border:0;outline:0}
 #st{margin-left:auto;font-size:12px;color:var(--mut);white-space:nowrap;padding:0 6px}
 *{scrollbar-width:none}*::-webkit-scrollbar{display:none}
 #list{overflow-x:hidden}.card b,.card p,.card small{overflow-wrap:anywhere}.nav{gap:8px}
+#pv img.miss{display:inline-block;min-width:140px;min-height:48px;padding:10px;border:1px dashed var(--tb);border-radius:8px;color:var(--mut);cursor:pointer}
+.pdf{width:100%;height:70vh;border:1px solid var(--tb);border-radius:8px;margin:8px 0}
 </style><script src="https://accounts.google.com/gsi/client" async defer></script></head><body>
 <div id="auth"><form id="af"><h2 style="margin:0">📝 Notes</h2>
 <input id="uid" placeholder="User ID or email" autocomplete="username" required>
@@ -112,14 +114,14 @@ function render(){const f=filter,q=$('#q').value.toLowerCase(),P=paths();
  $('#nbs').innerHTML=nbs().map(b=>`<option value="${esc(b)}">`).join('');
  const L=notes.filter(n=>(f.t==='all'||(f.t==='nb'?inDir(n,f.v):n.tags.includes(f.v)))&&(n.title+n.body).toLowerCase().includes(q))
   .sort((a,b)=>(b.pinned-a.pinned)||(new Date(b.updated_at)-new Date(a.updated_at)));
- $('#cards').innerHTML=L.map(n=>`<div class="card ${cur&&cur.id===n.id?'on':''}" data-id="${n.id}"><b>${n.pinned?'📌 ':''}${esc(n.title||'Untitled')}</b><p>${esc(n.body.replace(/[#*>`!\[\]()_|-]/g,'').slice(0,160))}</p>${n.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<small>${n.notebook===ROOT?'':'📁 '+esc(n.notebook)+' · '}${new Date(n.updated_at).toLocaleDateString()}</small></div>`).join('')||'<p style="padding:14px;color:var(--mut)">No notes</p>'}
+ $('#cards').innerHTML=L.map(n=>`<div class="card ${cur&&cur.id===n.id?'on':''}" data-id="${n.id}"><b>${n.pinned?'📌 ':''}${esc(n.title||'Untitled')}</b><p>${esc(n.body.replace(/!\[\[[^\]]*\]\]/g,'').replace(/[#*>`!\[\]()_|-]/g,'').slice(0,160))}</p>${n.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}<small>${n.notebook===ROOT?'':'📁 '+esc(n.notebook)+' · '}${new Date(n.updated_at).toLocaleDateString()}</small></div>`).join('')||'<p style="padding:14px;color:var(--mut)">No notes</p>'}
 $('#nav').onclick=e=>{const x=e.target.closest('[data-x]');
  if(x){const p=x.dataset.x;ex.has(p)?ex.delete(p):ex.add(p);localStorage.ex=JSON.stringify([...ex]);return render()}
  const b=e.target.closest('[data-t]');if(b){filter={t:b.dataset.t,v:b.dataset.v};B.classList.remove('menu');render()}};
 $('#cards').onclick=e=>{const c=e.target.closest('.card');if(c)openNote(c.dataset.id,true)};
 $('#q').oninput=render;$('#mn').onclick=()=>B.classList.toggle('menu');$('#bk').onclick=()=>B.classList.remove('edit');
 // ---- editor
-const pv=()=>{$('#pv').innerHTML=DOMPurify.sanitize(marked.parse($('#txt').value||'')).replace(/<table/g,'<div class="tw"><table').replace(/<\/table>/g,'</table></div>')};
+const pv=()=>{$('#pv').innerHTML=DOMPurify.sanitize(marked.parse(emb($('#txt').value||''))).replace(/<table/g,'<div class="tw"><table').replace(/<\/table>/g,'</table></div>');resolveImgs()};
 $('#pv').onclick=e=>{const a=e.target.closest('a');if(a){e.preventDefault();window.open(a.href,'_blank')}};
 function openNote(id,show){cur=notes.find(n=>n.id===id);if(!cur)return;
  $('#title').value=cur.title;$('#txt').value=cur.body;$('#nb').value=cur.notebook;$('#tg').value=cur.tags.join(', ');
@@ -157,26 +159,36 @@ document.addEventListener('visibilitychange',async()=>{if(document.hidden){hAt=D
  const id=cur&&cur.id;notes=data;const k=notes.find(n=>n.id===id)||notes[0];k?openNote(k.id):render()});
 addEventListener('beforeunload',e=>{if(dirty.size||saving){e.preventDefault();e.returnValue=''}});
 // ---- images & PDFs -> Supabase Storage, inserted as Markdown
-async function upload(file){const ext=(file.name&&file.name.includes('.')?file.name.split('.').pop():file.type.split('/')[1]||'png').toLowerCase();
- const p=`${user.id}/${crypto.randomUUID()}.${ext}`,{error}=await sb.storage.from('files').upload(p,file,{contentType:file.type});
- if(error)return alert(error.message);
- const url=sb.storage.from('files').getPublicUrl(p).data.publicUrl,t=$('#txt');
- t.setRangeText(`\n${file.type.startsWith('image/')?`![](${url})`:`[📄 ${file.name}](${url})`}\n`,t.selectionStart,t.selectionEnd,'end');changed()}
-$('#txt').onpaste=e=>{const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();upload(f)}};
+async function upload(file,gen){try{
+ await gAuth();const root=user.user_metadata.folder||await pickFolder();if(!root)return;
+ const ext=(file.name&&file.name.includes('.')?file.name.split('.').pop():file.type.split('/')[1]||'png').toLowerCase(),
+  name=gen===true||!file.name?`{${crypto.randomUUID().toUpperCase()}}.${ext}`:file.name,type=file.type||'application/octet-stream',
+  dir=await ensureDir(ATTACH,root),b='b'+Math.random().toString(36).slice(2);
+ setSt('Uploading to Drive…');
+ const r=await gf(`${GAPI}upload/drive/v3/files?uploadType=multipart&fields=id`,{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},
+  body:new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[dir]})}\r\n--${b}\r\nContent-Type: ${type}\r\n\r\n`,file,`\r\n--${b}--`])});
+ const id=(await r.json()).id;assets[name]=id;localStorage.assets=JSON.stringify(assets);nameUrl.set(name,URL.createObjectURL(file));
+ caches.open('drv').then(c=>c.put('/drv/'+id,new Response(file,{headers:{'Content-Type':type}}))).catch(()=>{});
+ const t=$('#txt');t.setRangeText(`\n![[${name}]]\n`,t.selectionStart,t.selectionEnd,'end');changed();setSt('Saved to Drive ✓')
+}catch(e){setSt('⚠ Upload failed: '+(e.message||e),'#e5534b')}}
+$('#txt').onpaste=e=>{const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();upload(f,true)}};
 $('#txt').ondrop=e=>{if(e.dataTransfer.files.length){e.preventDefault();[...e.dataTransfer.files].forEach(upload)}};
 $('#att').onclick=()=>$('#fi').click();$('#fi').onchange=e=>{[...e.target.files].forEach(upload);e.target.value=''};
 // ---- Google Drive sync: two-way, top-level .md files of one Drive folder (your Obsidian vault)
 const GAPI='https://www.googleapis.com/',tm=s=>+new Date(s);let gTok,gExp=0;
-const gAuth=()=>new Promise((ok,no)=>{if(gTok&&Date.now()<gExp)return ok(gTok);
+const gAuth=sl=>new Promise((ok,no)=>{if(gTok&&Date.now()<gExp)return ok(gTok);if(sl)return no(Error('Drive not connected'));
  google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:GAPI+'auth/drive',error_callback:no,
   callback:r=>{if(r.error)return no(Error(r.error));gTok=r.access_token;gExp=Date.now()+(r.expires_in-60)*1e3;ok(gTok)}}).requestAccessToken()});
-const gf=async(u,o={})=>{const r=await fetch(u,{...o,headers:{...o.headers,Authorization:'Bearer '+await gAuth()}});
+const gf=async(u,o={},sl)=>{const r=await fetch(u,{...o,headers:{...o.headers,Authorization:'Bearer '+await gAuth(sl)}});
  if(!r.ok)throw Error('Drive '+r.status+': '+(await r.text()).slice(0,150));return r};
 const media=async id=>(await gf(`${GAPI}drive/v3/files/${id}?alt=media`)).text();
 let idByPath={};
 async function ensureDir(path,root){let pid=root,acc='';
  for(const x of path.split('/').filter(Boolean)){acc=acc?acc+'/'+x:x;
-  if(!idByPath[acc]){const r=await gf(`${GAPI}drive/v3/files?fields=id`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:x,mimeType:'application/vnd.google-apps.folder',parents:[pid]})});idByPath[acc]=(await r.json()).id}
+  if(!idByPath[acc]){
+   const j=await(await gf(`${GAPI}drive/v3/files?pageSize=1&fields=files(id)&q=${encodeURIComponent(`'${pid}' in parents and name='${q1(x)}' and mimeType='application/vnd.google-apps.folder' and trashed=false`)}`)).json();
+   if(j.files.length)idByPath[acc]=j.files[0].id;
+   else{const r=await gf(`${GAPI}drive/v3/files?fields=id`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:x,mimeType:'application/vnd.google-apps.folder',parents:[pid]})});idByPath[acc]=(await r.json()).id}}
   pid=idByPath[acc]}
  return pid}
 async function put(n,root,f){const b='b'+Math.random().toString(36).slice(2),name=(n.title||'Untitled').replace(/[\\/:*?"<>|]/g,'-')+'.md',dest=await ensureDir(dirOf(n),root);
@@ -191,7 +203,7 @@ async function walk(root){const files=[];idByPath={};let lvl=[[root,'']];
    do{const j=await(await gf(`${GAPI}drive/v3/files?pageSize=1000&fields=nextPageToken,files(id,name,mimeType,modifiedTime,parents)&q=${encodeURIComponent(`'${id}' in parents and trashed=false`)}${pt?'&pageToken='+encodeURIComponent(pt):''}`)).json();
     for(const f of j.files){
      if(f.mimeType==='application/vnd.google-apps.folder'){if(!f.name.startsWith('.')){const p=path?path+'/'+f.name:f.name;idByPath[p]=f.id;next.push([f.id,p])}}
-     else if(f.name.endsWith('.md'))files.push({...f,dir:path})}
+     else if(f.name.endsWith('.md'))files.push({...f,dir:path});else if(/\.(png|jpe?g|gif|webp|svg|bmp|avif|pdf)$/i.test(f.name))assets[f.name]=f.id}
     pt=j.nextPageToken}while(pt)}));
   lvl=next}
  return files}
@@ -216,8 +228,28 @@ $('#sync').onclick=async()=>{const btn=$('#sync'),label=btn.textContent;
   await Promise.all(files.filter(f=>!linked.has(f.id)).map(async f=>{
    const {data}=await sb.from('notes').insert({title:f.name.slice(0,-3),body:await media(f.id),notebook:f.dir||ROOT,drive_id:f.id,drive_mtime:f.modifiedTime,updated_at:f.modifiedTime}).select().single();
    if(data){notes.push(data);down++}}));
-  render();if(cur)openNote(cur.id);alert(`Drive synced: ${up} uploaded, ${down} downloaded`)
+  localStorage.assets=JSON.stringify(assets);render();if(cur)openNote(cur.id);alert(`Drive synced: ${up} uploaded, ${down} downloaded`)
  }catch(e){alert(e.message||e)}finally{btn.textContent=label}};
+// ---- Drive-hosted images & PDFs: Obsidian embeds ![[name.png]] are looked up in the vault and cached on this device
+const ATTACH='ZUsed in Above Files',IMG=/\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i,assets=JSON.parse(localStorage.assets||'{}'),nameUrl=new Map();
+const q1=s=>s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+async function blobFor(id,sl){const c=await caches.open('drv'),k='/drv/'+id;let r=await c.match(k);
+ if(!r){r=await gf(`${GAPI}drive/v3/files/${id}?alt=media`,{},sl);await c.put(k,r.clone())}
+ return URL.createObjectURL(await r.blob())}
+async function assetUrl(nm,sl){if(nameUrl.has(nm))return nameUrl.get(nm);let id=assets[nm];
+ if(!id){const j=await(await gf(`${GAPI}drive/v3/files?pageSize=1&fields=files(id)&q=${encodeURIComponent(`name='${q1(nm)}' and trashed=false`)}`,{},sl)).json();
+  if(!j.files.length)throw Error('not found');id=assets[nm]=j.files[0].id;localStorage.assets=JSON.stringify(assets)}
+ const u=await blobFor(id,sl);nameUrl.set(nm,u);return u}
+const emb=t=>t.replace(/!\[\[([^\]|]+?)(?:\|([^\]]*))?\]\]/g,(m,n,w)=>{const f=n.trim().split('/').pop(),e=esc(f);
+ return /\.pdf$/i.test(f)?`<a data-drv="${e}" href="#">📄 ${e}</a>`:IMG.test(f)?`<img data-drv="${e}" alt="${e}"${/^\d+$/.test(w||'')?` width="${w}"`:''}>`:m});
+function resolveImgs(){$('#pv').querySelectorAll('img').forEach(async im=>{try{let nm=im.dataset.drv;
+ if(!nm){const s=im.getAttribute('src')||'';if(!s||/^(https?:|data:|blob:)/i.test(s))return;nm=decodeURIComponent(s.split('?')[0]).split('/').pop();im.dataset.drv=nm;im.removeAttribute('src')}
+ if(nameUrl.has(nm)){im.src=nameUrl.get(nm);return}
+ im.src=await assetUrl(nm,true);im.classList.remove('miss')}catch{im.classList.add('miss')}})}
+$('#pv').addEventListener('click',async e=>{const a=e.target.closest('a[data-drv]');
+ if(a){e.preventDefault();e.stopPropagation();const n=a.nextElementSibling;if(n&&n.tagName==='IFRAME')return n.remove();
+  try{await gAuth();const f=document.createElement('iframe');f.className='pdf';f.src=await assetUrl(a.dataset.drv,true);a.after(f)}catch(x){alert(x.message||x)}return}
+ if(e.target.closest('img.miss')){try{await gAuth();resolveImgs()}catch{}}},true);
 // ---- layout: resizable / collapsible panes, focus (zen) mode
 let lay=JSON.parse(localStorage.lay||'{"sw":230,"lw":320}');
 const applyLay=()=>{const st=$('#app').style;st.setProperty('--sw',(lay.hs?0:lay.sw)+'px');st.setProperty('--lw',(lay.hl?0:lay.lw)+'px');
