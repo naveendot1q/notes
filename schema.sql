@@ -6,6 +6,8 @@ create table if not exists notes(
   notebook text not null default 'My Notebook',
   tags text[] not null default '{}',
   pinned boolean not null default false,
+  drive_id text,
+  drive_mtime timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

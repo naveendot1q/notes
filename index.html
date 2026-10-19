@@ -44,7 +44,7 @@ input,textarea{background:transparent;border:0;outline:0}
  #list,#ed{grid-area:1/1}body:not(.edit) #ed{display:none}body.edit #list{display:none}
  .mob{display:inline-block}#pv{border:0}
 }
-</style></head><body>
+</style><script src="https://accounts.google.com/gsi/client" async defer></script></head><body>
 <div id="auth"><form id="af"><h2 style="margin:0">📝 Notes</h2>
 <input id="uid" placeholder="User ID or email" autocomplete="username" required>
 <input id="pw" type="password" placeholder="Password (min 6 chars)" autocomplete="current-password" minlength="6" required>
@@ -52,7 +52,7 @@ input,textarea{background:transparent;border:0;outline:0}
 <div id="app" class="hide">
 <aside id="side"><div id="me" style="padding:6px 8px;font-weight:600"></div>
 <button class="pri" id="new">＋ New note</button><div id="nav"></div><div style="flex:1"></div>
-<button class="nav" id="sync">⇄ Sync Obsidian folder</button><button class="nav" id="th">🌗 Dark / Light</button><button class="nav" id="out">Sign out</button></aside>
+<button class="nav" id="sync">⇄ Sync Google Drive</button><button class="nav" id="fold">📁 Drive folder…</button><button class="nav" id="th">🌗 Dark / Light</button><button class="nav" id="out">Sign out</button></aside>
 <section id="list"><header><button class="mob" id="mn">☰</button><input id="q" placeholder="Search notes"></header><div id="cards"></div></section>
 <main id="ed"><div id="bar"><button class="mob" id="bk">←</button>
 <input id="nb" list="nbs" placeholder="Notebook"><datalist id="nbs"></datalist><input id="tg" placeholder="tags, comma, separated">
@@ -64,7 +64,7 @@ input,textarea{background:transparent;border:0;outline:0}
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import {marked} from 'https://cdn.jsdelivr.net/npm/marked@12.0.2/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/+esm';
-const SUPABASE_URL='https://jtkozbplbwagittrnicj.supabase.co',SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0a296YnBsYndhZ2l0dHJuaWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMDExMzQsImV4cCI6MjEwNzg3NzEzNH0.6Q7ppRcvat-0c9yx8U2bR7tu-hNndWGkPowNqybQUy8';
+const SUPABASE_URL='https://jtkozbplbwagittrnicj.supabase.co',SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0a296YnBsYndhZ2l0dHJuaWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMDExMzQsImV4cCI6MjEwNzg3NzEzNH0.6Q7ppRcvat-0c9yx8U2bR7tu-hNndWGkPowNqybQUy8',GOOGLE_CLIENT_ID='655610743654-hprg3vamh8r7jr5621kjcd8nvnrr2niu.apps.googleusercontent.com';
 const sb=createClient(SUPABASE_URL,SUPABASE_KEY),$=s=>document.querySelector(s),B=document.body;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let notes=[],cur=null,user=null,timer,filter={t:'all'};
@@ -127,20 +127,41 @@ async function upload(file){const ext=(file.name&&file.name.includes('.')?file.n
 $('#txt').onpaste=e=>{const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();upload(f)}};
 $('#txt').ondrop=e=>{if(e.dataTransfer.files.length){e.preventDefault();[...e.dataTransfer.files].forEach(upload)}};
 $('#att').onclick=()=>$('#fi').click();$('#fi').onchange=e=>{[...e.target.files].forEach(upload);e.target.value=''};
-// ---- two-way sync with a folder of .md files (Obsidian vault via Google Drive for desktop)
-$('#sync').onclick=async()=>{
- if(!window.showDirectoryPicker)return alert('Folder sync needs desktop Chrome/Edge. Install Google Drive for desktop so your Obsidian vault folder exists on disk.');
- let dir;try{dir=await showDirectoryPicker({mode:'readwrite'})}catch{return}
- const files={};for await(const [name,h] of dir.entries())if(h.kind==='file'&&name.endsWith('.md'))files[name]={h,f:await h.getFile()};
- let pulled=0,pushed=0;
- for(const n of notes){
-  const name=(n.title||'Untitled').replace(/[\\/:*?"<>|]/g,'-')+'.md',x=files[name];delete files[name];
-  if(x&&x.f.lastModified>+new Date(n.updated_at)){
-   const t=await x.f.text();if(t!==n.body){n.body=t;n.updated_at=new Date().toISOString();await sb.from('notes').upsert(n);pulled++}
-  }else if(!x||(await x.f.text())!==n.body){
-   const h=x?x.h:await dir.getFileHandle(name,{create:true}),w=await h.createWritable();await w.write(n.body);await w.close();pushed++}}
- for(const [name,{f}] of Object.entries(files)){
-  const {data}=await sb.from('notes').insert({title:name.slice(0,-3),body:await f.text()}).select().single();if(data){notes.push(data);pulled++}}
- render();if(cur)openNote(cur.id);alert(`Synced: ${pushed} written to folder, ${pulled} pulled in`)};
+// ---- Google Drive sync: two-way, top-level .md files of one Drive folder (your Obsidian vault)
+const GAPI='https://www.googleapis.com/',tm=s=>+new Date(s);let gTok,gExp=0;
+const gAuth=()=>new Promise((ok,no)=>{if(gTok&&Date.now()<gExp)return ok(gTok);
+ google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:GAPI+'auth/drive',error_callback:no,
+  callback:r=>{if(r.error)return no(Error(r.error));gTok=r.access_token;gExp=Date.now()+(r.expires_in-60)*1e3;ok(gTok)}}).requestAccessToken()});
+const gf=async(u,o={})=>{const r=await fetch(u,{...o,headers:{...o.headers,Authorization:'Bearer '+await gAuth()}});
+ if(!r.ok)throw Error('Drive '+r.status+': '+(await r.text()).slice(0,150));return r};
+const media=async id=>(await gf(`${GAPI}drive/v3/files/${id}?alt=media`)).text();
+async function put(n,folder){const b='b'+Math.random().toString(36).slice(2),name=(n.title||'Untitled').replace(/[\\/:*?"<>|]/g,'-')+'.md';
+ const r=await gf(`${GAPI}upload/drive/v3/files${n.drive_id?'/'+n.drive_id:''}?uploadType=multipart&fields=id,modifiedTime`,
+  {method:n.drive_id?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+b},
+   body:`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(n.drive_id?{name}:{name,parents:[folder]})}\r\n--${b}\r\nContent-Type: text/markdown; charset=UTF-8\r\n\r\n${n.body}\r\n--${b}--`});
+ const f=await r.json();n.drive_id=f.id;n.updated_at=n.drive_mtime=f.modifiedTime}
+const pickFolder=async()=>{const v=prompt('Paste your Google Drive vault folder link (or its ID):',user.user_metadata.folder||'');if(!v)return;
+ const folder=(v.match(/folders\/([\w-]+)/)||[,v.trim()])[1],{data,error}=await sb.auth.updateUser({data:{folder}});
+ if(error)throw error;user=data.user;return folder};
+$('#fold').onclick=()=>pickFolder().catch(e=>alert(e.message));
+$('#sync').onclick=async()=>{const btn=$('#sync'),label=btn.textContent;
+ try{await gAuth();btn.textContent='⇄ Syncing…';
+  const folder=user.user_metadata.folder||await pickFolder();if(!folder)return;
+  const files=[];let pt='';
+  do{const j=await(await gf(`${GAPI}drive/v3/files?pageSize=1000&fields=nextPageToken,files(id,name,modifiedTime)&q=${encodeURIComponent(`'${folder}' in parents and trashed=false`)}${pt?'&pageToken='+encodeURIComponent(pt):''}`)).json();
+   files.push(...j.files.filter(f=>f.name.endsWith('.md')));pt=j.nextPageToken}while(pt);
+  const byId=Object.fromEntries(files.map(f=>[f.id,f])),linked=new Set();let up=0,down=0;
+  for(const n of notes){const f=byId[n.drive_id];if(f)linked.add(f.id);
+   const noteNew=!f||!n.drive_mtime||tm(n.updated_at)>tm(n.drive_mtime),fileNew=f&&tm(f.modifiedTime)!==tm(n.drive_mtime);
+   if(fileNew&&(!noteNew||tm(f.modifiedTime)>=tm(n.updated_at))){
+    n.body=await media(f.id);n.title=f.name.slice(0,-3);n.updated_at=n.drive_mtime=f.modifiedTime;down++}
+   else if(noteNew){if(!f)n.drive_id=null;await put(n,folder);up++}
+   else continue;
+   await sb.from('notes').upsert(n)}
+  await Promise.all(files.filter(f=>!linked.has(f.id)).map(async f=>{
+   const {data}=await sb.from('notes').insert({title:f.name.slice(0,-3),body:await media(f.id),drive_id:f.id,drive_mtime:f.modifiedTime,updated_at:f.modifiedTime}).select().single();
+   if(data){notes.push(data);down++}}));
+  render();if(cur)openNote(cur.id);alert(`Drive synced: ${up} uploaded, ${down} downloaded`)
+ }catch(e){alert(e.message||e)}finally{btn.textContent=label}};
 boot();
 </script></body></html>
